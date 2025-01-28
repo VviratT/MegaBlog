@@ -5,39 +5,57 @@ import appwriteService from "../../appwrite/config";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 
-export default function PostForm() {
-  const { register, handleSubmit, watch, formState:{errors, isSubmitting}, getValues, setValue, control } = useForm();
+export default function PostFormError({ post }) {
+  const { register, handleSubmit, watch, setValue, control, getValues } =
+    useForm({
+      defaultValues: {
+        title: post?.title || "",
+        slug: post?.$id || "",
+        content: post?.content || "",
+        status: post?.status || "active",
+      },
+    });
 
   const navigate = useNavigate();
-  const userData = useSelector(state => state.auth.userData);
+  const userData = useSelector((state) => state.auth.userData);
 
   const submit = async (data) => {
+    
+    if (post) {
+      const file = data.image[0]
+        ? await appwriteService.uploadFile(data.image[0])
+        : null;
 
-    const formData= new FormData();
-    formData.append('title', data.title);
-    formData.append('slug', data.slug);
-    formData.append('content', data.content);
-    formData.append('status', data.status);
-    formData.append('image', data.image[0]);
-
+      if (file) {
+        appwriteService.deleteFile(post.featuredImage);
+      }
+      
+      const dbPost = await appwriteService.updatePost(post.$id, {
+        ...data,
+        featuredImage: file ? file.$id : undefined,
+      });
+      console.log(dbPost);
+      
+      if (dbPost) {
+        navigate(`/post/${dbPost.$id}`);
+      }
+    } else {
       const file = await appwriteService.uploadFile(data.image[0]);
-        console.log("hello", userData.auth);
-        
+
       if (file) {
         const fileId = file.$id;
         data.featuredImage = fileId;
         const dbPost = await appwriteService.createPost({
           ...data,
-          userid: userData.$id,
+          userId: userData.$id,
         });
-        console.log(dbPost);
 
         if (dbPost) {
           navigate(`/post/${dbPost.$id}`);
         }
       }
     }
-  
+  };
 
   const slugTransform = useCallback((value) => {
     if (value && typeof value === "string")
@@ -93,9 +111,9 @@ export default function PostForm() {
           type="file"
           className="mb-4"
           accept="image/png, image/jpg, image/jpeg, image/gif"
-          {...register("image", { required: true })}
+          {...register("image", { required: !post })}
         />
-        {/* { {post && ( }
+        {post && (
           <div className="w-full mb-4">
             <img
               src={appwriteService.getFilePreview(post.featuredImage)}
@@ -103,7 +121,7 @@ export default function PostForm() {
               className="rounded-lg"
             />
           </div>
-        {)}} */}
+        )}
         <Select
           options={["active", "inactive"]}
           label="Status"
@@ -112,10 +130,10 @@ export default function PostForm() {
         />
         <Button
           type="submit"
-          bgColor={"bg-green-500"}
+          bgColor={post ? "bg-green-500" : undefined}
           className="w-full"
         >
-          {"Submit"}
+          {post ? "Update" : "Submit"}
         </Button>
       </div>
     </form>
