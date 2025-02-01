@@ -1,5 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { useEffect, useState } from "react";
 import App from "./App.jsx";
 import "./index.css";
 import { Provider } from "react-redux";
@@ -15,6 +16,7 @@ import EditPost from "./pages/EditPost";
 import Post from "./pages/Post";
 
 import AllPosts from "./pages/AllPosts";
+import SplineBackground from "./components/SplineBackground.jsx";
 
 const router = createBrowserRouter([
   {
@@ -76,10 +78,39 @@ const router = createBrowserRouter([
   },
 ]);
 
+const Root = () => {
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+   
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 4000);
+
+    
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <>
+      {loading ? (
+        <SplineBackground /> 
+      ) : (
+        <Provider store={store}>
+          <RouterProvider router={router} />
+        </Provider>
+      )}
+    </>
+  );
+};
+
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <Provider store={store}>
-      <RouterProvider router={router} />
-    </Provider>
+    <Root />
   </React.StrictMode>
 );
+
+//add edit post
+//add delete post
+//add like post
+//add CSS... color palette etc

@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
 import appwriteService from "../appwrite/config";
 import { Container, PostCard } from "../components";
+import { useNavigate } from "react-router-dom";
 
 function Home() {
+  const navigate = useNavigate();
   const [posts, setPosts] = useState([]);
 
   useEffect(() => {
@@ -13,15 +15,22 @@ function Home() {
     });
   }, []);
 
+  const submit = () => {
+    navigate('/login');
+  }
+
   if (posts.length === 0) {
     return (
       <div className="w-full py-8 mt-4 text-center">
         <Container>
           <div className="flex flex-wrap">
             <div className="p-2 w-full">
-              <h1 className="text-2xl font-bold hover:text-gray-500">
+              <button
+                onClick={submit}
+                className="text-2xl font-bold hover:text-deep-orange"
+              >
                 Login to read posts
-              </h1>
+              </button>
             </div>
           </div>
         </Container>
