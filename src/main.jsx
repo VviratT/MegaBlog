@@ -1,5 +1,5 @@
 import React from "react";
-import ReactDOM from "react-dom/client";
+import { createRoot } from "react-dom/client";
 import { useEffect, useState } from "react";
 import App from "./App.jsx";
 import "./index.css";
@@ -104,13 +104,13 @@ const Root = () => {
   );
 };
 
-ReactDOM.createRoot(document.getElementById("root")).render(
-  <React.StrictMode>
-    <Root />
-  </React.StrictMode>
-);
+const container = document.getElementById("root");
 
-//add edit post
-//add delete post
-//add like post
-//add CSS... color palette etc
+if (!container._reactRootContainer) {
+  const root = createRoot(container);
+  root.render(
+    <React.StrictMode>
+      <Root />
+    </React.StrictMode>
+  );
+}

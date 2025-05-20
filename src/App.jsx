@@ -28,7 +28,7 @@ function App() {
       <div className=" min-h-screen flex flex-wrap content-between bg-soft-cream">
         <div className=" w-full block">
           <Header />
-          <main className="mt-10 min-h-screen">
+          <main className="mt-40 min-h-screen">
             <Outlet />
           </main>
           <Footer />

@@ -1,63 +1,46 @@
 import React from "react";
 import { Container, Logo, LogoutBtn } from "../index";
-import { Link } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
 
-function Header() {
+export default function Header() {
   const authStatus = useSelector((state) => state.auth.status);
-  const navigate = useNavigate();
 
   const navItems = [
-    {
-      name: "Home",
-      slug: "/",
-      active: true,
-    },
-    {
-      name: "Login",
-      slug: "/login",
-      active: !authStatus,
-    },
-    {
-      name: "Signup",
-      slug: "/signup",
-      active: !authStatus,
-    },
-    {
-      name: "All Posts",
-      slug: "/all-posts",
-      active: authStatus,
-    },
-    {
-      name: "Add Post",
-      slug: "/add-post",
-      active: authStatus,
-    },
-  ];
+    { name: "Home",     to: "/",            show: true },
+    { name: "Login",    to: "/login",       show: !authStatus },
+    { name: "Signup",   to: "/signup",      show: !authStatus },
+    { name: "All Posts",to: "/all-posts",   show: authStatus },
+    { name: "Add Post", to: "/add-post",    show: authStatus },
+  ].filter(item => item.show);
 
   return (
-    <header className="fixed z-30 w-full py-3 shadow  bg-deep-orange">
+    <header className="fixed z-30 w-full py-3 shadow bg-deep-orange">
       <Container>
-        <nav className="flex">
-          <div className="mr-4">
-            <Link to="/">
-              <Logo width="80px" />
-            </Link>
-          </div>
-          <ul className="flex ml-auto">
-            {navItems.map((item) =>
-              item.active ? (
-                <li key={item.name}>
-                  <button
-                    onClick={() => navigate(item.slug)}
-                    className="text-white inline-bock px-6 py-2 duration-200 hover:bg-bright-yellow hover:text-black rounded-full"
-                  >
-                    {item.name}
-                  </button>
-                </li>
-              ) : null
-            )}
+        <nav className="flex items-center">
+          <NavLink to="/" className="mr-4">
+            <Logo width="80px" />
+          </NavLink>
+
+          <ul className="flex ml-auto space-x-2">
+            {navItems.map((item) => (
+              <li key={item.to}>
+                <NavLink
+                  to={item.to}
+                  end={item.to === "/"}
+                  className={({ isActive }) =>
+                    `inline-block px-6 py-2 rounded-full transition ${
+                      isActive
+                        ? "bg-bright-yellow text-black font-semibold"
+                        : "text-white hover:bg-bright-yellow hover:text-black"
+                    }`
+                  }
+                >
+                  {item.name}
+                </NavLink>
+              </li>
+            ))}
+
             {authStatus && (
               <li>
                 <LogoutBtn />
@@ -69,5 +52,3 @@ function Header() {
     </header>
   );
 }
-
-export default Header;

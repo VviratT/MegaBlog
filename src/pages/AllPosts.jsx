@@ -1,28 +1,93 @@
-import React, { useState, useEffect } from "react";
-import { Container, PostCard } from "../components";
-import appwriteService from "../appwrite/config";
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import authService from "../appwrite/auth";
+import appService from "../appwrite/service";
 
-function AllPosts() {
+export default function AllPosts() {
   const [posts, setPosts] = useState([]);
-  useEffect(() => {}, []);
-  appwriteService.getPosts([]).then((posts) => {
-    if (posts) {
-      setPosts(posts.documents);
-    }
-  });
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const user = await authService.getCurrentUser();
+        setCurrentUserId(user?.$id || null);
+
+        const docs = await appService.getPosts();
+
+        const enriched = await Promise.all(
+          docs.map(async (doc) => {
+            const imageUrl = await appService.getFilePreview(doc.featuredImage);
+            return { ...doc, imageUrl };
+          })
+        );
+
+        setPosts(enriched);
+      } catch (err) {
+        console.error("Error loading all posts:", err);
+      }
+    })();
+  }, []);
+
+  if (posts.length === 0) return <p className="p-4">No posts available.</p>;
+
   return (
-    <div className="w-full py-8">
-      <Container>
-        <div className="flex flex-wrap">
-          {posts.map((post) => (
-            <div key={post.$id} className="p-2 w-1/4">
-              <PostCard {...post} />
-            </div>
-          ))}
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 p-4">
+      {posts.map((post) => (
+        <div
+          key={post.$id}
+          onClick={() => navigate(`/post/${post.slug}`)}
+          className="cursor-pointer bg-white rounded-lg overflow-hidden shadow-lg hover:scale-105 transition"
+        >
+
+          <div className="w-full aspect-video overflow-hidden">
+            <img
+              src={post.imageUrl}
+              alt={post.title}
+              className="w-full h-full object-cover"
+            />
+          </div>
+
+          <div className="p-4">
+            <h3 className="text-xl font-semibold mb-2 line-clamp-2">
+              {post.title}
+            </h3>
+            <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+              {post.content}
+            </p>
+
+            {post.userid === currentUserId && (
+              <div className="flex justify-end space-x-4 text-sm">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/edit-post/${post.slug}`);
+                  }}
+                  className="text-green-600 hover:underline"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (window.confirm("Delete this post?")) {
+                      appService
+                        .deletePost(post.$id)
+                        .then(() =>
+                          setPosts((ps) => ps.filter((p) => p.$id !== post.$id))
+                        );
+                    }
+                  }}
+                  className="text-red-600 hover:underline"
+                >
+                  Delete
+                </button>
+              </div>
+            )}
+          </div>
         </div>
-      </Container>
+      ))}
     </div>
   );
 }
-
-export default AllPosts;
