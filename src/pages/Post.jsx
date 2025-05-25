@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { Box, Typography, Button } from "@mui/material";
+import { Edit, Delete } from "@mui/icons-material";
 import { useParams, useNavigate } from "react-router-dom";
 import authService from "../appwrite/auth";
 import appService from "../appwrite/service";
@@ -7,59 +9,71 @@ export default function Post() {
   const { slug } = useParams();
   const navigate = useNavigate();
   const [post, setPost] = useState(null);
-  const [currentUserId, setCurrentUserId] = useState(null);
+  const [userId, setUserId] = useState(null);
 
   useEffect(() => {
     (async () => {
       const user = await authService.getCurrentUser();
-      setCurrentUserId(user?.$id || null);
+      setUserId(user?.$id);
 
-      const res = await appService.getPostBySlug(slug);
-      const imageUrl = res.featuredImage
-        ? await appService.getFilePreview(res.featuredImage)
-        : null;
-
-      setPost({ ...res, imageUrl });
+      const doc = await appService.getPostBySlug(slug);
+      const imageUrl = await appService.getFilePreview(doc.featuredImage);
+      setPost({ ...doc, imageUrl });
     })();
   }, [slug]);
 
-  const handleDelete = async () => {
-    if (!confirm("Delete this post?")) return;
-    await appService.deletePost(post.$id);
-    navigate("/all-posts");
-  };
-
-  if (!post) return <p>Loading…</p>;
+  if (!post) {
+    return <Box sx={{ pt: 10, px: 2 }}>Loading…</Box>;
+  }
 
   return (
-    <div className="max-w-2xl mx-auto p-4">
-      {post.imageUrl && (
-        <img
-          src={post.imageUrl}
-          alt={post.title}
-          className="w-full h-auto object-contain mb-6 rounded-lg shadow"
-        />
-      )}
-      <h1 className="text-2xl font-bold">{post.title}</h1>
-      
-      <div
-        className="prose mt-4" 
-        dangerouslySetInnerHTML={{ __html: post.content }}
+    <Box sx={{ pt: 10, px: 2, maxWidth: "md", mx: "auto" }}>
+      {/* Full-width image */}
+      <Box
+        component="img"
+        src={post.imageUrl}
+        alt={post.title}
+        sx={{ width: "100%", borderRadius: 2, mb: 2 }}
       />
 
-      {post.userid === currentUserId && (
-        <div className="mt-4 space-x-4">
-          <button
+      {/* Title */}
+      <Typography variant="h4" gutterBottom>
+        {post.title}
+      </Typography>
+
+      {/* Rendered HTML content */}
+      <Box
+        className="prose"
+        dangerouslySetInnerHTML={{ __html: post.content }}
+        sx={{ mb: 3 }}
+      />
+
+      {/* Edit/Delete buttons if this is your post */}
+      {post.userid === userId && (
+        <Box sx={{ display: "flex", gap: 2 }}>
+          <Button
+            variant="contained"
+            startIcon={<Edit />}
             onClick={() => navigate(`/edit-post/${slug}`)}
-            className="text-green-600"
           >
             Edit
-          </button>
-          <button onClick={handleDelete} className="text-red-600">
+          </Button>
+          <Button
+            variant="outlined"
+            color="error"
+            startIcon={<Delete />}
+            onClick={() => {
+              if (window.confirm("Delete this post?")) {
+                appService.deletePost(post.$id).then(() => {
+                  navigate("/all-posts");
+                });
+              }
+            }}
+          >
             Delete
-          </button>
-        </div>
+          </Button>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }

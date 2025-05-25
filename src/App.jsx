@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
-import "./App.css";
+import { Box, CircularProgress } from "@mui/material";
 import authService from "./appwrite/auth";
 import { login, logout } from "./store/authSlice";
-import { Footer, Header } from "./components";
+import Header from "./components/Header/Header";
+import Footer from "./components/Footer/Footer";
 import { Outlet } from "react-router-dom";
 
-function App() {
+export default function App() {
   const [loading, setLoading] = useState(true);
   const dispatch = useDispatch();
 
@@ -21,21 +22,44 @@ function App() {
         }
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [dispatch]);
 
-  return !loading ? (
-    <>
-      <div className=" min-h-screen flex flex-wrap content-between bg-soft-cream">
-        <div className=" w-full block">
-          <Header />
-          <main className="mt-40 min-h-screen">
-            <Outlet />
-          </main>
-          <Footer />
-        </div>
-      </div>
-    </>
-  ) : null;
+  if (loading) {
+    // Center a spinner while auth check is in progress
+    return (
+      <Box
+        sx={{
+          height: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          bgcolor: "background.default",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  return (
+    <Box display="flex" flexDirection="column" minHeight="100vh">
+      <Header />
+
+      {/* Outlet renders the matched route */}
+      <Box
+        component="main"
+        sx={{
+          flex: 1,
+          bgcolor: "background.default",
+          px: 2,
+          pb: 8,
+          pt: 10, // to offset the fixed AppBar height
+        }}
+      >
+        <Outlet />
+      </Box>
+
+      <Footer />
+    </Box>
+  );
 }
-
-export default App;

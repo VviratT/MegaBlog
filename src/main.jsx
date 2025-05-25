@@ -9,6 +9,8 @@ import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import Home from "./pages/Home.jsx";
 import { AuthLayout, Login } from "./components/index.js";
 
+import ThemeProviderWrapper from "./ThemeProviderWrapper";
+
 import AddPost from "./pages/AddPost";
 import Signup from "./pages/Signup";
 import EditPost from "./pages/EditPost";
@@ -94,10 +96,12 @@ const Root = () => {
   return (
     <>
       {loading ? (
-        <SplineBackground /> 
+        <SplineBackground />
       ) : (
         <Provider store={store}>
-          <RouterProvider router={router} />
+          <ThemeProviderWrapper>
+            <RouterProvider router={router} />
+          </ThemeProviderWrapper>
         </Provider>
       )}
     </>
@@ -114,3 +118,10 @@ if (!container._reactRootContainer) {
     </React.StrictMode>
   );
 }
+
+
+
+// add ons
+// like button
+// comment section
+// user profile image in header and respective posts

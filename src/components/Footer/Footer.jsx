@@ -1,143 +1,142 @@
+// src/components/Footer.jsx
 import React from "react";
-import { Link } from "react-router-dom";
+import {
+  Box,
+  Container,
+  Grid,
+  Typography,
+  Link as MuiLink,
+  useTheme,
+} from "@mui/material";
 import Logo from "../Logo";
 
-function Footer() {
+export default function Footer() {
+  const theme = useTheme();
+
+  // Background: soft grey in light, paper in dark
+  const footerBg =
+    theme.palette.mode === "light"
+      ? theme.palette.grey[400]
+      : theme.palette.background.paper;
+
+  // Link styling
+  const linkSx = {
+    display: "block",
+    mb: 1,
+    color: theme.palette.mode === "light" ? "text.primary" : "common.white",
+    textDecoration: "none",
+    "&:hover": {
+      color: theme.palette.primary.main,
+    },
+  };
+
   return (
-    <section className="relative overflow-hidden py-10 bg-deep-orange border border-t-2 border-t-black">
-      <div className="relative z-10 bg-deep-orange text-white mx-auto max-w-7xl px-4">
-        <div className="-m-6 flex flex-wrap">
-          <div className="w-full p-6 md:w-1/2 lg:w-5/12">
-            <div className="flex h-full flex-col justify-between">
-              <div className="mb-4 inline-flex items-center">
-                <Logo width="100px" />
-              </div>
-              <div>
-                <p className="text-sm text-black">
-                  &copy; Copyright 2024. All Rights Reserved by VviratT09.
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="w-full p-6 md:w-1/2 lg:w-2/12">
-            <div className="h-full">
-              <h3 className="tracking-px mb-9  text-xs font-semibold uppercase text-black">
-                Company
-              </h3>
-              <ul>
-                <li className="mb-4">
-                  <Link
-                    className=" text-base font-medium text-white hover:text-bright-yellow"
-                    to="/"
-                  >
-                    Features
-                  </Link>
-                </li>
-                <li className="mb-4">
-                  <Link
-                    className=" text-base font-medium  text-white hover:text-bright-yellow"
-                    to="/"
-                  >
-                    Pricing
-                  </Link>
-                </li>
-                <li className="mb-4">
-                  <Link
-                    className=" text-base font-medium  text-white hover:text-bright-yellow"
-                    to="/"
-                  >
-                    Affiliate Program
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    className=" text-base font-medium  text-white hover:text-bright-yellow"
-                    to="/"
-                  >
-                    Press Kit
-                  </Link>
-                </li>
-              </ul>
-            </div>
-          </div>
-          <div className="w-full p-6 md:w-1/2 lg:w-2/12">
-            <div className="h-full">
-              <h3 className="tracking-px mb-9  text-xs font-semibold uppercase text-black">
-                Support
-              </h3>
-              <ul>
-                <li className="mb-4">
-                  <Link
-                    className=" text-base font-medium  text-white hover:text-bright-yellow"
-                    to="/"
-                  >
-                    Account
-                  </Link>
-                </li>
-                <li className="mb-4">
-                  <Link
-                    className=" text-base font-medium  text-white hover:text-bright-yellow"
-                    to="/"
-                  >
-                    Help
-                  </Link>
-                </li>
-                <li className="mb-4">
-                  <Link
-                    className=" text-base font-medium  text-white hover:text-bright-yellow"
-                    to="/"
-                  >
-                    Contact Us
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    className=" text-base font-medium  text-white hover:text-bright-yellow"
-                    to="/"
-                  >
-                    Customer Support
-                  </Link>
-                </li>
-              </ul>
-            </div>
-          </div>
-          <div className="w-full p-6 md:w-1/2 lg:w-3/12">
-            <div className="h-full">
-              <h3 className="tracking-px mb-9  text-xs font-semibold uppercase text-black">
-                Legals
-              </h3>
-              <ul>
-                <li className="mb-4">
-                  <Link
-                    className=" text-base font-medium  text-white hover:text-bright-yellow"
-                    to="/"
-                  >
-                    Terms &amp; Conditions
-                  </Link>
-                </li>
-                <li className="mb-4">
-                  <Link
-                    className=" text-base font-medium  text-white hover:text-bright-yellow"
-                    to="/"
-                  >
-                    Privacy Policy
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    className=" text-base font-medium  text-white hover:text-bright-yellow"
-                    to="/"
-                  >
-                    Licensing
-                  </Link>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
+    <Box
+      component="footer"
+      sx={{ bgcolor: footerBg, borderTop: 1, borderColor: "divider", py: 6 }}
+    >
+      <Container maxWidth="lg">
+        <Grid
+          container
+          spacing={4}
+          justifyContent="space-between"
+          alignItems="flex-start"
+        >
+          {/* LEFT COLUMN */}
+          <Grid item xs={12} md={3}>
+            <Box
+              display="flex"
+              flexDirection="column"
+              alignItems={{ xs: "center", md: "flex-start" }}
+            >
+              <Logo width="80px" />
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ mt: 2 }}
+              >
+                © {new Date().getFullYear()}. All Rights Reserved by VviratT09.
+              </Typography>
+            </Box>
+          </Grid>
+
+          {/* RIGHT COLUMN: Grouped links */}
+          <Grid item xs={12} md={9}>
+            <Box
+              display="flex"
+              justifyContent="flex-end"
+              flexWrap="wrap"
+              gap={4}
+            >
+              {/* Company */}
+              <Box>
+                <Typography
+                  variant="overline"
+                  gutterBottom
+                  color="text.secondary"
+                >
+                  Company
+                </Typography>
+                <MuiLink href="#" sx={linkSx}>
+                  Features
+                </MuiLink>
+                <MuiLink href="#" sx={linkSx}>
+                  Pricing
+                </MuiLink>
+                <MuiLink href="#" sx={linkSx}>
+                  Affiliate Program
+                </MuiLink>
+                <MuiLink href="#" sx={linkSx}>
+                  Press Kit
+                </MuiLink>
+              </Box>
+
+              {/* Support */}
+              <Box>
+                <Typography
+                  variant="overline"
+                  gutterBottom
+                  color="text.secondary"
+                >
+                  Support
+                </Typography>
+                <MuiLink href="#" sx={linkSx}>
+                  Account
+                </MuiLink>
+                <MuiLink href="#" sx={linkSx}>
+                  Help
+                </MuiLink>
+                <MuiLink href="#" sx={linkSx}>
+                  Contact Us
+                </MuiLink>
+                <MuiLink href="#" sx={linkSx}>
+                  Customer Support
+                </MuiLink>
+              </Box>
+
+              {/* Legals */}
+              <Box>
+                <Typography
+                  variant="overline"
+                  gutterBottom
+                  color="text.secondary"
+                >
+                  Legals
+                </Typography>
+                <MuiLink href="#" sx={linkSx}>
+                  Terms &amp; Conditions
+                </MuiLink>
+                <MuiLink href="#" sx={linkSx}>
+                  Privacy Policy
+                </MuiLink>
+                <MuiLink href="#" sx={linkSx}>
+                  Licensing
+                </MuiLink>
+              </Box>
+            </Box>
+          </Grid>
+        </Grid>
+      </Container>
+    </Box>
   );
 }
-
-export default Footer;
