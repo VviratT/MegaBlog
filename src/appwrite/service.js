@@ -1,7 +1,5 @@
-// src/appwrite/service.js
-import conf from '../conf/conf.js';
-import { Client, Databases, Storage, ID, Query } from 'appwrite';
-import { Permission, Role } from 'appwrite';
+import { Client, Databases, Storage, ID, Query, Permission, Role } from 'appwrite';
+import conf from '../conf/conf';
 
 class AppwriteService {
   constructor() {
@@ -12,80 +10,147 @@ class AppwriteService {
     this.storage   = new Storage(this.client);
   }
 
-async uploadFile(file) {
-  const uploadedFile = await this.storage.createFile(
-    conf.appwriteBucketId,
-    ID.unique(),
-    file
-  );
-  return uploadedFile.$id;  
-}
-
-
-  getFilePreview(fileId) {
+  // — File upload & preview URL —
+  async uploadFile(file) {
+    const res = await this.storage.createFile(
+      conf.appwriteBucketId, ID.unique(), file
+    );
+    return res.$id;
+  }
+  getFileView(fileId) {
     return this.storage.getFileView(conf.appwriteBucketId, fileId);
   }
-
-  async createPost({ title, content, featuredImage, slug, userid }) {
-    const docId = ID.unique();
-    return this.databases.createDocument(
-    conf.appwriteDatabaseId,
-    conf.appwriteCollectionId,
-    docId,
-    { title, content, featuredImage, userid, slug, status: 'active' },
-      [
-        Permission.read(Role.user(userid)),
-        Permission.update(Role.user(userid)),
-        Permission.delete(Role.user(userid)),
-      ]
-    );
+  getFilePreview(fileId) {
+    return this.storage.getFilePreview(conf.appwriteBucketId, fileId);
   }
 
-  async updatePost(docId, data) {
-  return this.databases.updateDocument(
-    conf.appwriteDatabaseId,
-    conf.appwriteCollectionId,
-    docId,
-    data
-  );
-}
+  // — Posts CRUD —
+  async getPosts(filters = [ Query.equal('status','active') ]) {
+    const { documents } = await this.databases.listDocuments(
+      conf.appwriteDatabaseId,
+      conf.appwriteCollectionId,
+      filters
+    );
+    return documents;
+  }
 
-  async deletePost(slug) {
+  async getPostBySlug(slug) {
+    const { documents } = await this.databases.listDocuments(
+      conf.appwriteDatabaseId,
+      conf.appwriteCollectionId,
+      [ Query.equal('slug', slug) ]
+    );
+    if (!documents.length) throw new Error(`Post not found: ${slug}`);
+    return documents[0];
+  }
+
+  createPost(data) {
+    return this.databases.createDocument(
+      conf.appwriteDatabaseId,
+      conf.appwriteCollectionId,
+      data.slug, data
+    );
+  }
+  updatePost(id, data) {
+    return this.databases.updateDocument(
+      conf.appwriteDatabaseId,
+      conf.appwriteCollectionId,
+      id, data
+    );
+  }
+  deletePost(id) {
     return this.databases.deleteDocument(
       conf.appwriteDatabaseId,
       conf.appwriteCollectionId,
-      slug
+      id
     );
   }
-
-  async getPost(slug) {
-    return this.databases.getDocument(
+  async countLikes(postId, type) {
+    const { total } = await this.databases.listDocuments(
       conf.appwriteDatabaseId,
-      conf.appwriteCollectionId,
-      slug
+      conf.appwriteLikesCollectionId,
+      [
+        Query.equal('postId', postId),
+        Query.equal('type', type)
+      ],
+      0,
+      0
     );
+    return total;
   }
 
-  // ← This is the one needed for listing all posts:
-  async getPosts(queries = [ Query.equal('status', 'active') ]) {
-   const res = await this.databases.listDocuments(
-     conf.appwriteDatabaseId,
-     conf.appwriteCollectionId,
-     queries
-   );
-   return res.documents;
- }
 
+  // — Likes toggle 
+  async toggleLike(postId, userId, type) {
+    const { documents } = await this.databases.listDocuments(
+      conf.appwriteDatabaseId,
+      conf.appwriteLikesCollectionId,
+      [
+        Query.equal('postId', postId),
+        Query.equal('userId', userId)
+      ]
+    );
+    const existing = documents[0] || null;
 
-  async getPostBySlug(slug) {
-  const res = await this.databases.listDocuments(
-    conf.appwriteDatabaseId,
-    conf.appwriteCollectionId,
-    [ Query.equal('slug', slug), Query.limit(1) ]
-  );
-  return res.documents[0];
+    if (existing) {
+      if (existing.type === type) {
+        // remove
+        return this.databases.deleteDocument(
+          conf.appwriteDatabaseId,
+          conf.appwriteLikesCollectionId,
+          existing.$id
+        );
+      } else {
+        // switch
+        return this.databases.updateDocument(
+          conf.appwriteDatabaseId,
+          conf.appwriteLikesCollectionId,
+          existing.$id,
+          { type }
+        );
+      }
+    } else {
+      // create
+      return this.databases.createDocument(
+        conf.appwriteDatabaseId,
+        conf.appwriteLikesCollectionId,
+        ID.unique(),
+        { postId, userId, type },
+        [
+          Permission.read(Role.any()),
+          Permission.write(Role.user(userId)),
+          Permission.delete(Role.user(userId))
+        ]
+      );
+    }
+  }
+
+  // — Comments —
+  async getComments(postId) {
+    const { documents } = await this.databases.listDocuments(
+      conf.appwriteDatabaseId,
+      conf.appwriteCommentsCollectionId,
+      [
+        Query.equal('postId', postId),
+        Query.orderDesc('createdAt')
+      ]
+    );
+    return documents;
+  }
+
+  async createComment({ postId, userId, userName, content }) {
+    return this.databases.createDocument(
+      conf.appwriteDatabaseId,
+      conf.appwriteCommentsCollectionId,
+      ID.unique(),
+      { postId, userId, userName, content, createdAt: new Date().toISOString() },
+      [
+        Permission.read(Role.any()),
+        Permission.write(Role.users()),
+        Permission.delete(Role.user(userId))
+      ]
+    );
+  }
 }
-}
 
-const appService = new AppwriteService();
-export default appService;
+export default new AppwriteService();

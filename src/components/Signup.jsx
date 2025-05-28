@@ -1,93 +1,113 @@
 import React, { useState } from "react";
+import { Box, TextField, Button, Avatar, Typography } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 import authService from "../appwrite/auth";
-import { Link, useNavigate } from "react-router-dom";
-import { login } from "../store/authSlice";
-import { Button, Input, Logo } from "./index.js";
-import { useDispatch } from "react-redux";
-import { useForm } from "react-hook-form";
+import appService from "../appwrite/service";
 
-function Signup() {
+export default function Signup() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [file, setFile] = useState(null);
+  const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
-  const [error, setError] = useState("");
-  const dispatch = useDispatch();
-  const { register, handleSubmit } = useForm();
 
-  const create = async (data) => {
-    setError("");
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setBusy(true);
+
     try {
-      const userData = await authService.createAccount(data);
-      if (userData) {
-        const userData = await authService.getCurrentUser();
-        if (userData) dispatch(login(userData));
-        navigate("/");
+      // Upload avatar if provided
+      let profileImage = null;
+      if (file) {
+        profileImage = await appService.uploadFile(file);
       }
-    } catch (error) {
-      setError(error.message);
+
+      // Create the user account
+      await authService.createAccount({ email, password, name });
+
+      // Save profileImage in prefs
+      if (profileImage) {
+        await authService.updatePrefs({ profileImage });
+      }
+
+      //Redirect to login
+      navigate("/login");
+    } catch (err) {
+      console.error("Signup error", err);
+      alert("Failed to sign up");
+    } finally {
+      setBusy(false);
     }
   };
 
   return (
-    <div className="flex my-40  items-center justify-center">
-      <div
-        className={`mx-auto w-full max-w-lg bg-black bg-opacity-20 rounded-xl p-10 border border-black/10`}
-      >
-        <div className="mb-2 flex justify-center">
-          <span className="inline-block w-full max-w-[100px]">
-            <Logo width="100%" />
-          </span>
-        </div>
-        <h2 className="text-center text-2xl font-bold leading-tight">
-          Sign up to create account
-        </h2>
-        <p className="mt-2 text-center text-base text-black/60">
-          Already have an account?&nbsp;
-          <Link
-            to="/login"
-            className="font-medium text-primary transition-all duration-200 hover:underline"
-          >
-            Sign In
-          </Link>
-        </p>
-        {error && <p className="text-red-600 mt-8 text-center">{error}</p>}
+    <Box
+      component="form"
+      onSubmit={handleSubmit}
+      sx={{
+        maxWidth: 400,
+        mx: "auto",
+        mt: 8,
+        p: 4,
+        bgcolor: "background.paper",
+        borderRadius: 2,
+      }}
+    >
+      <Typography variant="h5" gutterBottom>
+        Sign Up
+      </Typography>
 
-        <form onSubmit={handleSubmit(create)}>
-          <div className="space-y-5">
-            <Input
-              label="Full Name: "
-              placeholder="Enter your full name"
-              {...register("name", {
-                required: true,
-              })}
-            />
-            <Input
-              label="Email: "
-              placeholder="Enter your email"
-              type="email"
-              {...register("email", {
-                required: true,
-                validate: {
-                  matchPatern: (value) =>
-                    /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(value) ||
-                    "Email address must be a valid address",
-                },
-              })}
-            />
-            <Input
-              label="Password: "
-              type="password"
-              placeholder="Enter your password"
-              {...register("password", {
-                required: true,
-              })}
-            />
-            <Button type="submit" className="w-full">
-              Create Account
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
+      <TextField
+        label="Name"
+        fullWidth
+        required
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        sx={{ mb: 2 }}
+      />
+
+      <TextField
+        label="Email"
+        type="email"
+        fullWidth
+        required
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        sx={{ mb: 2 }}
+      />
+
+      <TextField
+        label="Password"
+        type="password"
+        fullWidth
+        required
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        sx={{ mb: 2 }}
+      />
+
+      <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+        <Avatar
+          src={file && URL.createObjectURL(file)}
+          sx={{ width: 56, height: 56, mr: 2 }}
+        >
+          {!file && name.charAt(0).toUpperCase()}
+        </Avatar>
+        <Button variant="contained" component="label">
+          Upload Avatar
+          <input
+            type="file"
+            accept="image/*"
+            hidden
+            onChange={(e) => setFile(e.target.files[0] || null)}
+          />
+        </Button>
+      </Box>
+
+      <Button type="submit" variant="contained" fullWidth disabled={busy}>
+        {busy ? "Creating…" : "Sign Up"}
+      </Button>
+    </Box>
   );
 }
-
-export default Signup;

@@ -6,21 +6,30 @@ import {
   IconButton,
   Button,
   Stack,
+  Avatar,
 } from "@mui/material";
-import { Brightness7, Brightness4 } from "@mui/icons-material";
+import { Brightness4, Brightness7 } from "@mui/icons-material";
 import { NavLink, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { ColorModeContext } from "../../ThemeProviderWrapper";
-import LogoutBtn from './LogoutBtn';
+import authService from "../../appwrite/auth"; 
 
 export default function Header() {
-  const auth = useSelector((state) => state.auth.status);
+  const auth = useSelector((state) => state.auth);
   const { mode, toggleColorMode } = useContext(ColorModeContext);
   const location = useLocation().pathname;
 
+  const userName = auth.userData?.name;
+  const userId = auth.userData?.$id;
+  const userPhotoId = auth.userData?.prefs?.profileImage;
+
+  const userPhotoUrl = userPhotoId
+    ? authService.getFileView(userPhotoId)
+    : null;
+
   const links = [
     { label: "Home", path: "/" },
-    ...(auth
+    ...(auth.status
       ? [
           { label: "All Posts", path: "/all-posts" },
           { label: "Add Post", path: "/add-post" },
@@ -34,8 +43,13 @@ export default function Header() {
   return (
     <AppBar position="fixed" elevation={4}>
       <Toolbar sx={{ justifyContent: "space-between" }}>
-        <Typography variant="h6">MegaBlog</Typography>
-        <Stack direction="row" spacing={1} alignItems="center">
+        <Typography variant="h6">DhananjayBlogs</Typography>
+
+        <Stack direction="row" spacing={2} alignItems="center">
+          <IconButton color="inherit" onClick={toggleColorMode}>
+            {mode === "light" ? <Brightness4 /> : <Brightness7 />}
+          </IconButton>
+
           {links.map(({ label, path }) => (
             <Button
               key={path}
@@ -50,10 +64,19 @@ export default function Header() {
               {label}
             </Button>
           ))}
-          {auth && <LogoutBtn />}
-          <IconButton color="inherit" onClick={toggleColorMode}>
-            {mode === "light" ? <Brightness4 /> : <Brightness7 />}
-          </IconButton>
+
+          {auth.status && (
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <Avatar
+                src={userPhotoUrl}
+                alt={userName}
+                sx={{ width: 32, height: 32 }}
+              >
+                {!userPhotoUrl && userName?.charAt(0).toUpperCase()}
+              </Avatar>
+              <Typography variant="subtitle2">{userName}</Typography>
+            </Stack>
+          )}
         </Stack>
       </Toolbar>
     </AppBar>

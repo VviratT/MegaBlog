@@ -1,40 +1,37 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { Search } from "@mui/icons-material";
 import {
   Box,
   Grid,
   Card,
   CardMedia,
   CardContent,
-  InputAdornment,
   Typography,
   CardActions,
   IconButton,
-  TextField,
   Pagination,
+  TextField,
   Fab,
   Skeleton,
 } from "@mui/material";
 import { Edit, Delete, Add } from "@mui/icons-material";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import authService from "../appwrite/auth";
 import appService from "../appwrite/service";
 import { Query } from "appwrite";
 
 export default function PostsList({ ownOnly = false }) {
-  const navigate = useNavigate();
+  const nav = useNavigate();
   const [posts, setPosts] = useState([]);
-  const [userId, setUserId] = useState(null);
+  const [uid, setUid] = useState(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const perPage = 6;
-  const location = useLocation().pathname;
+  const perPage = 8;
 
   useEffect(() => {
     (async () => {
       const user = await authService.getCurrentUser();
-      setUserId(user?.$id);
+      setUid(user?.$id);
       const filters = ownOnly
         ? [Query.equal("userid", user.$id), Query.equal("status", "active")]
         : [Query.equal("status", "active")];
@@ -42,7 +39,9 @@ export default function PostsList({ ownOnly = false }) {
       const enriched = await Promise.all(
         docs.map(async (d) => ({
           ...d,
-          imageUrl: await appService.getFilePreview(d.featuredImage),
+          imageUrl: d.featuredImage
+            ? await appService.getFileView(d.featuredImage)
+            : null,
         }))
       );
       setPosts(enriched);
@@ -55,129 +54,110 @@ export default function PostsList({ ownOnly = false }) {
       posts.filter((p) => p.title.toLowerCase().includes(search.toLowerCase())),
     [posts, search]
   );
-
   const pageCount = Math.ceil(filtered.length / perPage);
-  const current = useMemo(
-    () => filtered.slice((page - 1) * perPage, page * perPage),
-    [filtered, page]
-  );
+  const slice = filtered.slice((page - 1) * perPage, page * perPage);
 
   return (
-    <Box
-      sx={{
-        pt: 10,
-        px: 2,
-        bgcolor: "background.default",
-        minHeight: "calc(100vh - 128px)",
-      }}
-    >
-      {/* ——— Stylish Search Bar ——— */}
+    <Box sx={{ pt: 10, px: 2, textAlign: "center" }}>
       <TextField
-        placeholder={ownOnly ? "Search your posts…" : "Search all posts…"}
-        fullWidth
-        size="small"
-        variant="outlined"
+        placeholder={ownOnly ? "Search your posts…" : "Search posts…"}
         value={search}
         onChange={(e) => {
           setSearch(e.target.value);
           setPage(1);
         }}
-        sx={{
-          mb: 3,
-          bgcolor: "background.paper",
-          borderRadius: 2,
-          boxShadow: 1,
-          "& .MuiOutlinedInput-root": {
-            borderRadius: 2,
-          },
-        }}
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <Search color="action" />
-            </InputAdornment>
-          ),
-        }}
+        variant="outlined"
+        size="small"
+        sx={{ mb: 3, width: "100%", maxWidth: 400 }}
       />
 
-      {/* ——— Card Grid ——— */}
-      <Box
-        sx={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 2,
-          justifyContent: "flex-start",
-        }}
-      >
-        {(loading ? Array(perPage).fill(null) : current).map((post, idx) => (
-          <Box key={post?.$id || idx}>
+      <Grid container spacing={2} justifyContent="center" alignItems="stretch">
+        {(loading ? Array(perPage).fill(null) : slice).map((p, i) => (
+          <Grid
+            key={p?.$id ?? i}
+            item
+            xs={12}
+            sm={6}
+            md={4}
+            lg={3}
+            sx={{ display: "flex", justifyContent: "center" }}
+          >
             {loading ? (
-              <Skeleton variant="rectangular" width="25vw" height="35vh" />
+              <Skeleton variant="rectangular" width={280} height={350} />
             ) : (
               <Card
+                onClick={() => nav(`/post/${p.slug}`)}
                 sx={{
-                  width: "25vw",
-                  height: "45vh",
-                  cursor: "pointer",
+                  width: 280,
+                  height: 350,
                   display: "flex",
                   flexDirection: "column",
-                  transition: "0.3s",
-                  "&:hover": { transform: "scale(1.04)", boxShadow: 6 },
+                  cursor: "pointer",
+                  transition: "0.2s",
+                  "&:hover": { transform: "scale(1.03)" },
                 }}
-                onClick={() => navigate(`/post/${post.slug}`)}
               >
-                {/* — More space for image: ~60% height — */}
-                <CardMedia
-                  component="img"
-                  sx={{ height: "60%", flexShrink: 0 }}
-                  image={post.imageUrl}
-                  alt={post.title}
-                />
-
-                {/* — More compact description — */}
-                <CardContent
-                  sx={{
-                    flex: 1,
-                    overflow: "hidden",
-                    p: 1,
-                    pt: 1,
-                  }}
-                >
-                  <Typography variant="subtitle1" noWrap>
-                    {post.title}
+                {p.imageUrl && (
+                  <CardMedia
+                    component="img"
+                    height="140"
+                    image={p.imageUrl}
+                    alt={p.title}
+                  />
+                )}
+                <CardContent sx={{ flexGrow: 1, overflow: "hidden" }}>
+                  <Typography variant="h6" noWrap>
+                    {p.title}
                   </Typography>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    noWrap
-                    sx={{ mt: 0.5, fontSize: "0.85rem" }}
-                  >
-                    {post.content}
+                  <Typography variant="body2" color="text.secondary" noWrap>
+                    {p.content}
                   </Typography>
                 </CardContent>
-
-                <CardActions disableSpacing sx={{ justifyContent: "flex-end" }}>
-                  {post.userid === userId && <>{/* edit/delete as before */}</>}
+                <CardActions>
+                  {p.userid === uid && (
+                    <>
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          nav(`/edit-post/${p.slug}`);
+                        }}
+                      >
+                        <Edit fontSize="small" />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          if (confirm("Delete this post?")) {
+                            await appService.deletePost(p.$id);
+                            setPosts((ps) => ps.filter((x) => x.$id !== p.$id));
+                          }
+                        }}
+                      >
+                        <Delete fontSize="small" />
+                      </IconButton>
+                    </>
+                  )}
                 </CardActions>
               </Card>
             )}
-          </Box>
+          </Grid>
         ))}
-      </Box>
+      </Grid>
 
-      <Box sx={{ display: "flex", justifyContent: "center", my: 3 }}>
-        <Pagination
-          count={pageCount}
-          page={page}
-          onChange={(_, v) => setPage(v)}
-          color="primary"
-        />
-      </Box>
+      <Pagination
+        count={pageCount}
+        page={page}
+        onChange={(_, v) => setPage(v)}
+        color="primary"
+        sx={{ mt: 3 }}
+      />
 
       <Fab
         color="primary"
-        onClick={() => navigate("/add-post")}
-        sx={{ position: "fixed", bottom: 24, right: 24 }}
+        onClick={() => nav("/add-post")}
+        sx={{ position: "fixed", bottom: 20, right: 20 }}
       >
         <Add />
       </Fab>

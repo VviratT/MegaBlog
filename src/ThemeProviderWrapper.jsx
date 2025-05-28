@@ -7,7 +7,7 @@ export const ColorModeContext = createContext({
 });
 
 export default function ThemeProviderWrapper({ children }) {
-  const [mode, setMode] = useState("dark");
+  const [mode, setMode] = useState("dark"); 
   const colorMode = useMemo(
     () => ({
       mode,
@@ -24,14 +24,12 @@ export default function ThemeProviderWrapper({ children }) {
           mode,
           ...(mode === "light"
             ? {
-                primary: { main: "#1976d2" }, // blue
+                primary: { main: "#1976d2" },
                 background: { default: "#fafafa", paper: "#fff" },
-                text: { primary: "#000" },
               }
             : {
-                primary: { main: "#9c27b0" }, // purple
+                primary: { main: "#9c27b0" },
                 background: { default: "#000", paper: "#121212" },
-                text: { primary: "#fff" },
               }),
         },
         shape: { borderRadius: 8 },
