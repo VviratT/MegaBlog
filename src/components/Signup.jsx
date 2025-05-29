@@ -3,6 +3,8 @@ import { Box, TextField, Button, Avatar, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import authService from "../appwrite/auth";
 import appService from "../appwrite/service";
+import { useDispatch } from "react-redux";
+import { login as loginAction } from "../store/authSlice";
 
 export default function Signup() {
   const [name, setName] = useState("");
@@ -11,28 +13,38 @@ export default function Signup() {
   const [file, setFile] = useState(null);
   const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setBusy(true);
 
     try {
-      // Upload avatar if provided
+      // upload avatar if any
       let profileImage = null;
       if (file) {
         profileImage = await appService.uploadFile(file);
       }
 
-      // Create the user account
+      // create the user
       await authService.createAccount({ email, password, name });
 
-      // Save profileImage in prefs
+      // immediately log them in
+      await authService.login({ email, password });
+
+      // optionally store avatar in prefs
       if (profileImage) {
         await authService.updatePrefs({ profileImage });
       }
 
-      //Redirect to login
-      navigate("/login");
+      // fetch the freshly-created user object
+      const user = await authService.getCurrentUser();
+
+      // dispatch into Redux
+      dispatch(loginAction({ userData: user }));
+
+      // go home (header will now show the logged-in links)
+      navigate("/");
     } catch (err) {
       console.error("Signup error", err);
       alert("Failed to sign up");
@@ -92,7 +104,7 @@ export default function Signup() {
           src={file && URL.createObjectURL(file)}
           sx={{ width: 56, height: 56, mr: 2 }}
         >
-          {!file && name.charAt(0).toUpperCase()}
+          {!file && name.charAt(0)?.toUpperCase()}
         </Avatar>
         <Button variant="contained" component="label">
           Upload Avatar

@@ -14,9 +14,16 @@ export default function App() {
   useEffect(() => {
     authService
       .getCurrentUser()
-      .then((user) =>
-        user.$id ? dispatch(login({ userData: user })) : dispatch(logout())
-      )
+      .then((user) => {
+        if (user && user.$id) {
+          dispatch(login(user));
+        } else {
+          dispatch(logout());
+        }
+      })
+      .catch(() => {
+        dispatch(logout());
+      })
       .finally(() => setLoading(false));
   }, [dispatch]);
 

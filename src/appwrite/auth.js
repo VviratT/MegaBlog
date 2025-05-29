@@ -9,24 +9,31 @@ class AuthService {
     this.account = new Account(this.client);
   }
 
-  createAccount({ email, password, name }) {
+  async createAccount({ email, password, name }) {
     const userId = email.split('@')[0];
     return this.account.create(userId, email, password, name);
   }
 
-  login({ email, password }) {
+  async login({ email, password }) {
     return this.account.createEmailPasswordSession(email, password);
   }
 
-  logout() {
+  async logout() {
     return this.account.deleteSessions();
   }
 
-  getCurrentUser() {
-    return this.account.get(); 
+  async getCurrentUser() {
+    try {
+      return await this.account.get();
+    } catch (err) {
+      if (err.message.includes('missing scope') || err.code === 401) {
+        return null;
+      }
+      throw err;
+    }
   }
 
-  updatePrefs(prefs) {
+  async updatePrefs(prefs) {
     return this.account.updatePrefs(prefs);
   }
 }
