@@ -41,7 +41,14 @@ export default function PostDetail() {
         appService.getComments(doc.$id),
       ]);
 
-
+      const enrichedComments = await Promise.all(
+        cs.map(async (c) => ({
+          ...c,
+          userImageUrl: c.userImage
+            ? await appService.getFileView(c.userImage)
+            : null,
+        }))
+      );
 
       setPost({
         ...doc,
@@ -50,20 +57,32 @@ export default function PostDetail() {
         upvotes: upCount,
         downvotes: downCount,
       });
-      setComments(cs);
+      setComments(enrichedComments);
     })();
   }, [slug]);
 
   const handleComment = async (e) => {
     e.preventDefault();
+    const user = await authService.getCurrentUser();
     if (!newComment.trim()) return;
     await appService.createComment({
       postId: post.$id,
       userId,
+      userName: user.name,
+      userImage: user.prefs?.profileImage || null,
       content: newComment.trim(),
     });
     setNewComment("");
-    setComments(await appService.getComments(post.$id));
+    const raw = await appService.getComments(post.$id);
+    const enriched = await Promise.all(
+      raw.map(async (c) => ({
+        ...c,
+        userImageUrl: c.userImage
+          ? await appService.getFileView(c.userImage)
+          : null,
+      }))
+    );
+    setComments(enriched);
   };
 
   if (!post) return <Box sx={{ pt: 10, textAlign: "center" }}>Loading…</Box>;
@@ -103,10 +122,10 @@ export default function PostDetail() {
           onClick={async () => {
             await appService.toggleLike(post.$id, userId, "up");
             const [upCount, downCount] = await Promise.all([
-            appService.countLikes(post.$id,'up'),
-            appService.countLikes(post.$id,'down'),
-          ]);
-          setPost(p => ({ ...p, upvotes: upCount, downvotes: downCount }));
+              appService.countLikes(post.$id, "up"),
+              appService.countLikes(post.$id, "down"),
+            ]);
+            setPost((p) => ({ ...p, upvotes: upCount, downvotes: downCount }));
           }}
         >
           <ThumbUp /> {post.upvotes}
@@ -172,7 +191,7 @@ export default function PostDetail() {
 
       {comments.map((c) => (
         <Box key={c.$id} sx={{ display: "flex", mb: 2 }}>
-          <Avatar sx={{ width: 32, height: 32, mr: 1 }}>
+          <Avatar src={c.userImageUrl} sx={{ width: 32, height: 32, mr: 1 }}>
             {c.userName?.charAt(0).toUpperCase()}
           </Avatar>
           <Box>

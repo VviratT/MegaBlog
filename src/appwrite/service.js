@@ -138,12 +138,12 @@ class AppwriteService {
     return documents;
   }
 
-  async createComment({ postId, userId, userName, content }) {
+  async createComment({ postId, userId, userName, userImage, content }) {
     return this.databases.createDocument(
       conf.appwriteDatabaseId,
       conf.appwriteCommentsCollectionId,
       ID.unique(),
-      { postId, userId, userName, content, createdAt: new Date().toISOString() },
+      { postId, userId, userName, userImage, content, createdAt: new Date().toISOString() },
       [
         Permission.read(Role.any()),
         Permission.write(Role.users()),

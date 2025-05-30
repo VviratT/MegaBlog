@@ -1,3 +1,4 @@
+// src/pages/PostsList.jsx
 import React, { useEffect, useState, useMemo } from "react";
 import {
   Box,
@@ -12,15 +13,21 @@ import {
   TextField,
   Fab,
   Skeleton,
+  Avatar,
+  Alert,
+  Fade,
+  Button,
 } from "@mui/material";
 import { Edit, Delete, Add } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import authService from "../appwrite/auth";
 import appService from "../appwrite/service";
 import { Query } from "appwrite";
 
 export default function PostsList({ ownOnly = false }) {
   const nav = useNavigate();
+  const authStatus = useSelector((state) => state.auth.status);
   const [posts, setPosts] = useState([]);
   const [uid, setUid] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -31,10 +38,16 @@ export default function PostsList({ ownOnly = false }) {
   useEffect(() => {
     (async () => {
       const user = await authService.getCurrentUser();
-      setUid(user?.$id);
-      const filters = ownOnly
-        ? [Query.equal("userid", user.$id), Query.equal("status", "active")]
-        : [Query.equal("status", "active")];
+      setUid(user?.$id || null);
+      const filters = [Query.equal("status", "active")];
+      if (ownOnly) {
+        if (user?.$id) {
+          filters.unshift(Query.equal("userid", user.$id));
+        } else {
+          // no user yet, no own posts
+          filters.push(Query.equal("userid", "__none__"));
+        }
+      }
       const docs = await appService.getPosts(filters);
       const enriched = await Promise.all(
         docs.map(async (d) => ({
@@ -42,6 +55,8 @@ export default function PostsList({ ownOnly = false }) {
           imageUrl: d.featuredImage
             ? await appService.getFileView(d.featuredImage)
             : null,
+          authorName: d.authorName,
+          authorProfileImage: d.authorProfileImage,
         }))
       );
       setPosts(enriched);
@@ -56,6 +71,54 @@ export default function PostsList({ ownOnly = false }) {
   );
   const pageCount = Math.ceil(filtered.length / perPage);
   const slice = filtered.slice((page - 1) * perPage, page * perPage);
+
+  // empty state
+  if (!loading && filtered.length === 0) {
+    return (
+      <Box sx={{ pt: 10, px: 2, textAlign: "center" }}>
+        <Fade in timeout={600}>
+          <Alert
+            severity="info"
+            icon={false}
+            sx={{ display: "inline-flex", alignItems: "center", p: 3 }}
+          >
+            {authStatus ? (
+              <>
+                You haven’t created any posts yet.
+                <Button
+                  variant="outlined"
+                  onClick={() => nav("/add-post")}
+                  sx={{ ml: 1 }}
+                >
+                  Add your first post
+                </Button>
+              </>
+            ) : (
+              <>
+                Welcome! Please
+                <Button
+                  variant="text"
+                  onClick={() => nav("/login")}
+                  sx={{ ml: 1 }}
+                >
+                  Login
+                </Button>
+                or
+                <Button
+                  variant="text"
+                  onClick={() => nav("/signup")}
+                  sx={{ mx: 1 }}
+                >
+                  Sign up
+                </Button>
+                to explore posts.
+              </>
+            )}
+          </Alert>
+        </Fade>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ pt: 10, px: 2, textAlign: "center" }}>
@@ -109,6 +172,17 @@ export default function PostsList({ ownOnly = false }) {
                   <Typography variant="h6" noWrap>
                     {p.title}
                   </Typography>
+                  <Box sx={{ display: "flex", alignItems: "center", mt: 0.5 }}>
+                    <Avatar
+                      src={p.authorProfileImage}
+                      sx={{ width: 24, height: 24, mr: 1 }}
+                    >
+                      {p.authorName?.charAt(0).toUpperCase()}
+                    </Avatar>
+                    <Typography variant="caption" color="text.secondary" noWrap>
+                      {p.authorName}
+                    </Typography>
+                  </Box>
                   <Typography variant="body2" color="text.secondary" noWrap>
                     {p.content}
                   </Typography>

@@ -1,3 +1,4 @@
+// src/components/Header/Header.jsx
 import React, { useContext } from "react";
 import {
   AppBar,
@@ -22,8 +23,8 @@ export default function Header() {
   const { mode, toggleColorMode } = useContext(ColorModeContext);
   const location = useLocation().pathname;
 
+  // Pull username + avatar file ID out of Redux
   const userName = auth.userData?.name;
-  const userId = auth.userData?.$id;
   const userPhotoId = auth.userData?.prefs?.profileImage;
   const userPhotoUrl = userPhotoId ? appService.getFileView(userPhotoId) : null;
 
@@ -36,7 +37,7 @@ export default function Header() {
     }
   };
 
-  // Nav links vary based on auth.status
+  // Build nav links depending on auth.status
   const links = [
     { label: "Home", path: "/" },
     ...(auth.status
@@ -56,12 +57,12 @@ export default function Header() {
         <Typography variant="h6">DhananjayBlogs</Typography>
 
         <Stack direction="row" spacing={2} alignItems="center">
-          {/* theme toggle */}
+          {/* Theme toggle */}
           <IconButton color="inherit" onClick={toggleColorMode}>
             {mode === "light" ? <Brightness4 /> : <Brightness7 />}
           </IconButton>
 
-          {/* dynamic nav links */}
+          {/* Nav links */}
           {links.map(({ label, path }) => (
             <Button
               key={path}
@@ -77,7 +78,7 @@ export default function Header() {
             </Button>
           ))}
 
-          {/* when logged in, show avatar, name and logout */}
+          {/* If logged in, show avatar, name, logout */}
           {auth.status && (
             <Stack direction="row" alignItems="center" spacing={1}>
               <Avatar

@@ -24,9 +24,11 @@ class AuthService {
 
   async getCurrentUser() {
     try {
-      return await this.account.get();
+      // this will throw if no session / missing scope
+      const user = await this.account.get();
+      return user;  // contains $id, name, email, prefs, etc.
     } catch (err) {
-      if (err.message.includes('missing scope') || err.code === 401) {
+      if (err.code === 401 || err.message.includes('missing scope')) {
         return null;
       }
       throw err;
