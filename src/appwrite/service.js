@@ -44,11 +44,21 @@ class AppwriteService {
     return documents[0];
   }
 
+  
   createPost(data) {
+    const sanitizeSlug = (slug) => {
+      if (typeof slug !== 'string') return null;
+      return slug
+        .toLowerCase()
+        .replace(/[^a-z0-9._-]/g, '') 
+        .substring(0, 36); 
+    };
+    const docId = sanitizeSlug(data.slug);
     return this.databases.createDocument(
       conf.appwriteDatabaseId,
       conf.appwriteCollectionId,
-      data.slug, data
+      docId || ID.unique(),
+      data
     );
   }
   updatePost(id, data) {
