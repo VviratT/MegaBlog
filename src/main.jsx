@@ -121,7 +121,3 @@ if (!container._reactRootContainer) {
 
 
 
-// add ons
-// like button
-// comment section
-// user profile image in header and respective posts
