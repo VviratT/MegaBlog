@@ -1,4 +1,3 @@
-// src/components/Header/Header.jsx
 import React, { useContext } from "react";
 import {
   AppBar,
